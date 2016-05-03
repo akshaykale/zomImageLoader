@@ -3,6 +3,7 @@ package com.ark.zomimagelib;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -26,7 +27,7 @@ public class ImageManager {
     private long cacheDuration;
     private SimpleDateFormat mDateFormatter;
 
-    private HashMap<String, SoftReference<Bitmap>> imageMap = new HashMap<>();
+    private LruCache<String, Bitmap> lruCacheMap; //= new HashMap<>();
 
     private File cacheDir;
     private ImageQueue imageQueue = new ImageQueue();
@@ -43,6 +44,19 @@ public class ImageManager {
 
         cacheDuration = _cacheDuration;
         mDateFormatter = new SimpleDateFormat("EEE',' dd MMM yyyy HH:mm:ss zzz");
+
+
+        final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
+        // Use 1/8th of the available memory for this memory cache.
+        final int cacheSize = maxMemory / 8;
+        lruCacheMap = new LruCache<String, Bitmap>(cacheSize) {
+            @Override
+            protected int sizeOf(String key, Bitmap bitmap) {
+                // The cache size will be measured in kilobytes rather than
+                // number of items.
+                return bitmap.getByteCount() / 1024;
+            }
+        };
 
         // Make background thread low priority, to avoid affecting UI performance
         imageLoaderThread.setPriority(Thread.NORM_PRIORITY - 1);
@@ -64,11 +78,15 @@ public class ImageManager {
     public void displayImage(String url, ImageView imageView, int defaultDrawableId, int w, int h) {
 
         //Check if hashmap already has the imageBitmap
-        if (imageMap.containsKey(url)) {
-            imageView.setImageBitmap(imageMap.get(url).get());
-            listView.deferNotifyDataSetChanged();
+        Bitmap bmp = getBitmapFromMemCache(url);
+        if(bmp !=null)
+            imageView.setImageBitmap(bmp);
 
-        } else {
+        /*if (imageMap.containsKey(url)) {
+            imageView.setImageBitmap(imageMap.get(url).get());
+        }*/
+
+        else {
             //add image to queue
             queueImage(url, imageView, defaultDrawableId, w, h);
             //set temporary drawable
@@ -181,7 +199,7 @@ public class ImageManager {
                         }
 
                         Bitmap bmp = getBitmap(imageToLoad);
-                        imageMap.put(imageToLoad.url, new SoftReference<Bitmap>(bmp));
+                        lruCacheMap.put(imageToLoad.url, bmp);
                         Object tag = imageToLoad.imageView.getTag();
 
                         // Make sure we have the right view - thread safety defender
@@ -202,5 +220,15 @@ public class ImageManager {
             } catch (InterruptedException e) {
             }
         }
+    }
+
+    public void addBitmapToMemoryCache(String key, Bitmap bitmap) {
+        if (getBitmapFromMemCache(key) == null) {
+            lruCacheMap.put(key, bitmap);
+        }
+    }
+
+    public Bitmap getBitmapFromMemCache(String key) {
+        return lruCacheMap.get(key);
     }
 }
