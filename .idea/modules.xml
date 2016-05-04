@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/ZomImageLibraryProject.iml" filepath="$PROJECT_DIR$/ZomImageLibraryProject.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/partialimageloading/partialimageloading.iml" filepath="$PROJECT_DIR$/partialimageloading/partialimageloading.iml" />
       <module fileurl="file://$PROJECT_DIR$/zomimagelib/zomimagelib.iml" filepath="$PROJECT_DIR$/zomimagelib/zomimagelib.iml" />
     </modules>
   </component>

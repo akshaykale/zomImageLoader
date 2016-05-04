@@ -1,1 +1,1 @@
-include ':app', ':zomimagelib'
+include ':app', ':zomimagelib', ':partialimageloading'

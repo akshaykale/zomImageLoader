@@ -3,7 +3,6 @@ package com.ark.zomimagelib;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.ImageView;
@@ -84,12 +83,12 @@ public class ZomImageView extends ImageView implements AbsListView.OnScrollListe
                 //Ignore
                 break;
             case SCROLL_STATE_IDLE:
-                ImgDownloadAsync imgDownloadAsync = new ImgDownloadAsync(this, LVState.SCROLL_STATE_IDLE);
-                imgDownloadAsync.execute(url);
+                //ImageDownloader imgDownloadAsync = new ImageDownloader(this, LVState.SCROLL_STATE_IDLE);
+                //imgDownloadAsync.execute(url);
                 break;
             case SCROLL_STATE_TOUCH_SCROLL:
-                ImgDownloadAsync imgDownloadAsync_ = new ImgDownloadAsync(this, LVState.SCROLL_STATE_TOUCH_SCROLL);
-                imgDownloadAsync_.execute(url);
+                //ImageDownloader imgDownloadAsync_ = new ImageDownloader(this, LVState.SCROLL_STATE_TOUCH_SCROLL);
+                //imgDownloadAsync_.execute(url);
                 break;
 
             default:

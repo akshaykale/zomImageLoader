@@ -1,5 +1,6 @@
 package com.ark.zomimagelibraryproject;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -35,6 +36,14 @@ public class MainActivity extends AppCompatActivity {
         vListView = (ListView) findViewById(R.id.main_list_view);
 
         vListView.setAdapter(new CustomListViewAdapter(getApplicationContext(), vListView));
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivity(new Intent(MainActivity.this,PartialImgLoader.class));
+            }
+        });
     }
 
 

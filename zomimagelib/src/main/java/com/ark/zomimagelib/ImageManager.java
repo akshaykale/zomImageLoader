@@ -10,11 +10,7 @@ import android.widget.ListView;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.ref.SoftReference;
-import java.net.URL;
-import java.net.URLConnection;
 import java.text.SimpleDateFormat;
-import java.util.HashMap;
 
 /**
  * Created by zomguest on 03/05/16.
@@ -147,31 +143,16 @@ public class ImageManager {
              * */
 
             bitmap = Utils.decodeBitmapFromInputStream(imgRef.url,200,200);
+            //ImageDownloader imageDownloader = new ImageDownloader();
             // save bitmap to cache for later
 
-            writeFile(bitmap, bitmapFile);
+            Utils.writeFile(bitmap, bitmapFile);
 
             return bitmap;
 
         } catch (Exception ex) {
             ex.printStackTrace();
             return null;
-        }
-    }
-
-    private void writeFile(Bitmap bmp, File f) {
-        FileOutputStream out = null;
-
-        try {
-            out = new FileOutputStream(f);
-            bmp.compress(Bitmap.CompressFormat.PNG, 80, out);
-        } catch (Exception e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (out != null) out.close();
-            } catch (Exception ex) {
-            }
         }
     }
 
