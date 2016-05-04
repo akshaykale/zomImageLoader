@@ -21,7 +21,7 @@ public class ImageDownloader implements DownloadListener{
 
     public Context context;
 
-    public int THREAD_POOL_NUM = 10;
+    public int THREAD_POOL_NUM = 5;
 
     public int[] download_status;
 
@@ -168,15 +168,9 @@ public class ImageDownloader implements DownloadListener{
         }
         final Bitmap bitmap = Utils.decodeBitmapFromByteArray(finalData,finalData.length,200,200);//BitmapFactory.decodeByteArray(finalData , 0, finalData .length);
 
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        byte[] byteArray = stream.toByteArray();
-
-
-
         if(intFileDownloadListener!=null)
             intFileDownloadListener.DownloadComplete(bitmap);
         if (bitmap!=null)
-        Log.d(TAG,finalData.length+"     DOWNLOAD COMPLETE    "+byteArray.length);
+        Log.d(TAG,finalData.length+"     DOWNLOAD COMPLETE    ");
     }
 }

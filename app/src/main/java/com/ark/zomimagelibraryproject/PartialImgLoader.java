@@ -29,7 +29,7 @@ public class PartialImgLoader extends AppCompatActivity{
 
         //imageView.setImageResource(R.drawable.simple);
 
-        imageLoader.loadImage(Constants.IMG10,imageView);
+        imageLoader.loadImage(Constants.IMG14,imageView);//2,4,5,9,11,12,13,15
 
         //imageLoader.partition(imageView);
 

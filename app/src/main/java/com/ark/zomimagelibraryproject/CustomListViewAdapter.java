@@ -27,18 +27,17 @@ public class CustomListViewAdapter extends BaseAdapter {
     //    this.dataList = dataList;
         this.context = context;
 
-        dataList = new String[10];
+        dataList = new String[10];//2,4,5,9,11,12,13,15
         dataList[0] = Constants.IMG1;
-        dataList[1] = Constants.IMG2;
-        dataList[2] = Constants.IMG3;
-        dataList[3] = Constants.IMG4;
-        dataList[4] = Constants.IMG5;
-        dataList[5] = Constants.IMG6;
-        dataList[6] = Constants.IMG7;
-        dataList[7] = Constants.IMG8;
-        dataList[8] = Constants.IMG9;
-        dataList[9] = Constants.IMG10;
-
+        dataList[1] = Constants.IMG3;
+        dataList[2] = Constants.IMG6;
+        dataList[3] = Constants.IMG7;
+        dataList[4] = Constants.IMG8;
+        dataList[5] = Constants.IMG1;
+        dataList[6] = Constants.IMG14;
+        dataList[7] = Constants.IMG6;
+        dataList[8] = Constants.IMG7;
+        dataList[9] = Constants.IMG8;
         imageManager = new ImageManager(context, listView, 1000000000);
     }
 

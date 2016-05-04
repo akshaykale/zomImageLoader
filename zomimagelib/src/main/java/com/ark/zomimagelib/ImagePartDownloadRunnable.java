@@ -3,7 +3,10 @@ package com.ark.zomimagelib;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -39,7 +42,6 @@ class ImagePartDownloadRunnable implements Runnable {
         try {
             /** STEP 1 --  URL*/
             URL url = new URL(img_url);
-
             /** STEP 2 --  Open Connection*/
             connection = (HttpURLConnection) url.openConnection();
 
@@ -57,7 +59,11 @@ class ImagePartDownloadRunnable implements Runnable {
             }else {
                 downloadListener.downloadFailed(current_chunk, this);
             }
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
             e.printStackTrace();
             downloadListener.downloadFailed(current_chunk, this);
         } finally {
