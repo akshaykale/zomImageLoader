@@ -1,5 +1,13 @@
 # arkImageLoader
-Initial Commit: Image Loading Library for Listview
+Image downloading Library for Listview
+
+Features:
+
+> Parallel image downloading by dividing image in multiple chunks
+
+> Image Cashing
+
+> Optimised image loading for ListViews/GridViews
 
 
 
