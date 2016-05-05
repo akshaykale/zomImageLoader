@@ -6,6 +6,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.widget.ImageView;
 
 import com.akshaykale.partialimageloading.ProgressingImageLoader;
+import com.ark.zomimagelib.ImageManager;
 
 
 /**
@@ -16,6 +17,8 @@ public class PartialImgLoader extends AppCompatActivity{
      ImageView imageView;
 
     ProgressingImageLoader imageLoader;
+
+    ImageManager imageManager;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -29,7 +32,8 @@ public class PartialImgLoader extends AppCompatActivity{
 
         //imageView.setImageResource(R.drawable.simple);
 
-        imageLoader.loadImage(Constants.IMG10,imageView);
+        imageManager = new ImageManager(getApplicationContext(),null,10000000);
+        imageManager.displayImage(Constants.IMG10,imageView,R.mipmap.ic_launcher);
 
         //imageLoader.partition(imageView);
 

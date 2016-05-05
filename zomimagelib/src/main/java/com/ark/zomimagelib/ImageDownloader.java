@@ -6,7 +6,6 @@ import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.widget.ImageView;
 
-import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -15,13 +14,13 @@ import java.util.concurrent.Executors;
 /**
  * Created by zomguest on 02/05/16.
  */
-public class ImageDownloader implements DownloadListener{
+public class ImageDownloader implements IntFileChunksDownloadListener {
 
     ImageView imageView;
 
     public Context context;
 
-    public int THREAD_POOL_NUM = 10;
+    public int THREAD_POOL_NUM = 5;
 
     public int[] download_status;
 
@@ -168,15 +167,9 @@ public class ImageDownloader implements DownloadListener{
         }
         final Bitmap bitmap = Utils.decodeBitmapFromByteArray(finalData,finalData.length,200,200);//BitmapFactory.decodeByteArray(finalData , 0, finalData .length);
 
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, stream);
-        byte[] byteArray = stream.toByteArray();
-
-
-
         if(intFileDownloadListener!=null)
-            intFileDownloadListener.DownloadComplete(bitmap);
+            intFileDownloadListener.onDownloadComplete(bitmap);
         if (bitmap!=null)
-        Log.d(TAG,finalData.length+"     DOWNLOAD COMPLETE    "+byteArray.length);
+        Log.d(TAG,finalData.length+"     DOWNLOAD COMPLETE    ");
     }
 }

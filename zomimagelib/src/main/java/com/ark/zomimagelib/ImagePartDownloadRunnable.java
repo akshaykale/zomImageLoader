@@ -3,7 +3,10 @@ package com.ark.zomimagelib;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 
 /**
@@ -16,15 +19,15 @@ class ImagePartDownloadRunnable implements Runnable {
 
     private static final String TAG = "ImagePartDownload";
 
-    public ImagePartDownloadRunnable(String img_url, int start, int end, int current_chunk, DownloadListener downloadListener) {
+    public ImagePartDownloadRunnable(String img_url, int start, int end, int current_chunk, IntFileChunksDownloadListener fileChunksDownloadListener) {
         this.img_url = img_url;
         this.start = start;
         this.end = end;
         this.current_chunk = current_chunk;
-        this.downloadListener = downloadListener;
+        this.fileChunksDownloadListener = fileChunksDownloadListener;
     }
 
-    DownloadListener downloadListener;
+    IntFileChunksDownloadListener fileChunksDownloadListener;
 
     String img_url;
     int start,end;
@@ -39,7 +42,6 @@ class ImagePartDownloadRunnable implements Runnable {
         try {
             /** STEP 1 --  URL*/
             URL url = new URL(img_url);
-
             /** STEP 2 --  Open Connection*/
             connection = (HttpURLConnection) url.openConnection();
 
@@ -53,13 +55,17 @@ class ImagePartDownloadRunnable implements Runnable {
             byte[] part = Utils.getBytes(in);
 
             if(part !=null){
-                downloadListener.downloadComplete(current_chunk,part);
+                fileChunksDownloadListener.downloadComplete(current_chunk,part);
             }else {
-                downloadListener.downloadFailed(current_chunk, this);
+                fileChunksDownloadListener.downloadFailed(current_chunk, this);
             }
-        } catch (Exception e) {
+        } catch (FileNotFoundException e) {
             e.printStackTrace();
-            downloadListener.downloadFailed(current_chunk, this);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+            fileChunksDownloadListener.downloadFailed(current_chunk, this);
         } finally {
             try {
                 if(in!=null)

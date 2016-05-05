@@ -5,8 +5,6 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
@@ -139,7 +137,6 @@ public class ProgressingImageLoader {
 
 class downloadThread implements Runnable, IntFileDownloadListener {
 
-
     private static final String TAG = "aaa";
     String str_url;
 
@@ -165,9 +162,14 @@ class downloadThread implements Runnable, IntFileDownloadListener {
             /** STEP 3 --  get content length*/
             total_len = connection.getContentLength();
             chunk_len = ProgressingImageLoader.CHUNK_SIZE;
-            num_chunk = total_len / chunk_len;
-            int last_chunk = chunk_len % total_len;
-            num_chunk = (last_chunk>0) ? num_chunk++ : num_chunk;
+            if(total_len<=chunk_len){
+                chunk_len = total_len;
+                num_chunk = 1;
+            }else {
+                num_chunk = total_len / chunk_len;
+                int last_chunk = chunk_len % total_len;
+                num_chunk = (last_chunk > 0) ? num_chunk++ : num_chunk;
+            }
             /** STEP 4 --  disconnect*/
             connection.disconnect();
             Log.d(TAG, "total_len:" + total_len + "  chunk_len:" + chunk_len + "   num_chunk: " + num_chunk);
@@ -181,7 +183,7 @@ class downloadThread implements Runnable, IntFileDownloadListener {
     }
 
     @Override
-    public void DownloadComplete(final Bitmap bitmap) {
+    public void onDownloadComplete(final Bitmap bitmap) {
         Log.d(TAG, "@@@@@@@@");
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
