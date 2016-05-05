@@ -9,7 +9,7 @@ public class Constants {
 
     public static final String IMG1 = "http://cdn.wonderfulengineering.com/wp-content/uploads/2014/03/high-resolution-wallpapers-25.jpg";
 
-    public static final String IMG2 = "http://pic.1fotonin.com/data/wallpapers/130/WDF_1724185.jpg";
+    public static final String IMG2 = "http://pic.1fotonin.com/data/wallpapers/130/highresimage.jpgg";
 
     public static final String IMG3 = "http://www.fwallpaper.net/wallpapers/F/R/Free-high-resolution-desktop-wallpaper_1920x1200.jpg";
 

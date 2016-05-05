@@ -1,9 +1,11 @@
 package com.ark.zomimagelib;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.util.LruCache;
@@ -12,7 +14,6 @@ import android.widget.ImageView;
 import android.widget.ListView;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -20,7 +21,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 /**
- * Created by zomguest on 03/05/16.
+ * Created by akshay on 03/05/16.
  */
 public class ImageManager {
 
@@ -85,16 +86,18 @@ public class ImageManager {
         }
     }
 
-    public void displayImage(String url, ImageView imageView, int defaultDrawableId, int w, int h) {
+    public void displayImage(String url, ImageView imageView, int defaultDrawableId) {
+        /** get actual bitmapsize to be displayed in the image view*/
+        imageView.setImageResource(R.drawable.place_holder);
+        int [] imgInfo = Utils.getBitmapPositionInsideImageView(imageView);
 
         //Check if cache map already has the imageBitmap
         Bitmap bmp = getBitmapFromMemCache(url);
         if(bmp !=null)
             imageView.setImageBitmap(bmp);
-
         else {
             //add image to queue
-            queueImage(url, imageView, defaultDrawableId, w, h);
+            queueImage(url, imageView, defaultDrawableId, imgInfo[2], imgInfo[3]);
             //set temporary drawable
             imageView.setImageResource(defaultDrawableId);
         }
@@ -102,7 +105,6 @@ public class ImageManager {
 
     private void queueImage(String url, ImageView imageView, int defaultDrawableId, int w, int h) {
         //In case the imageview is used for other images, we clear the queue of old tasks before starting
-
         imageQueue.Clean(imageView);
         ImageRef p = new ImageRef(url, imageView, defaultDrawableId, w, h);
 
@@ -113,9 +115,10 @@ public class ImageManager {
         if (imageLoaderThread.getState() == Thread.State.NEW) {
             imageLoaderThread.start();
         }
-
     }
-
+    /**
+     *  For normal ImageView
+     * */
     private Bitmap getBitmap(ImageRef imgRef) {
         try {
             String filename = String.valueOf(imgRef.url.hashCode());
@@ -123,7 +126,7 @@ public class ImageManager {
             //get bitmap from cache dir
             File bitmapFile = new File(cacheDir, filename);
             Bitmap bitmap = null;
-            if(bitmapFile.exists())
+            if(bitmapFile.exists() && imgRef.view_width >=0 && imgRef.view_height >=0)
                 bitmap = Utils.decodeBitmapFromFile(bitmapFile.getPath(),imgRef.view_width,imgRef.view_height);//BitmapFactory.decodeFile(bitmapFile.getPath());
 
             // Check if the bitmap is present in the cache
@@ -146,18 +149,6 @@ public class ImageManager {
                     return bitmap;
                 }*/
             }
-
-            // Need to download bitmap
-
-            /**
-             * parallel image download
-             * */
-            //bitmap = Utils.decodeBitmapFromInputStream(imgRef.url,200,200);
-            //ImageDownloader imageDownloader = new ImageDownloader();
-            // save bitmap to cache for later
-
-            //Utils.writeFile(bitmap, bitmapFile);
-
             return bitmap;
 
         } catch (Exception ex) {
@@ -183,13 +174,13 @@ public class ImageManager {
 
                     // When we have images to be loaded
                     if (imageQueue.imageRefs.size() != 0) {
-                        ImageRef imageToLoad;
+                        final ImageRef imageToLoad;
 
                         synchronized (imageQueue.imageRefs) {
                             imageToLoad = imageQueue.imageRefs.pop();
                         }
 
-                        Bitmap bmp = getBitmap(imageToLoad);
+                        final Bitmap bmp = getBitmap(imageToLoad);
                         if(bmp!=null) {
                             addBitmapToMemoryCache(imageToLoad.url, bmp);
                             Object tag = imageToLoad.imageView.getTag();
@@ -198,17 +189,22 @@ public class ImageManager {
                             if (tag != null && ((String) tag).equals(imageToLoad.url)) {
                                 BitmapDisplayer bmpDisplayer =
                                         new BitmapDisplayer(bmp, imageToLoad.imageView, imageToLoad.defDrawableId);
-                                Activity a =
-                                        (Activity) imageToLoad.imageView.getContext();
-                                a.runOnUiThread(bmpDisplayer);
+                                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                                    @Override
+                                    public void run() {
+                                        imageToLoad.imageView.setImageBitmap(bmp);
+                                    }
+                                });
                             }
                         }else {
-                            Rect scrollBounds = new Rect();
-                            listView.getHitRect(scrollBounds);
-                            if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
-                                executorService.execute(new downloadThread(context,imageToLoad));
-                            } else {
-
+                            if(listView!=null) {
+                                Rect scrollBounds = new Rect();
+                                listView.getHitRect(scrollBounds);
+                                if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
+                                    executorService.execute(new downloadThread(context, imageToLoad));
+                                }
+                            }else {
+                                executorService.execute(new downloadThread(context, imageToLoad));
                             }
 
                         }
@@ -242,8 +238,6 @@ public class ImageManager {
     class downloadThread implements Runnable, IntFileDownloadListener {
 
         private static final String TAG = "aaa";
-        private static final int CHUNK_SIZE = 8000;
-
         Context context;
         public int total_len, chunk_len, num_chunk ;
 
@@ -263,7 +257,7 @@ public class ImageManager {
                 HttpURLConnection connection = (HttpURLConnection) url.openConnection();
                 /** STEP 3 --  get content length*/
                 total_len = connection.getContentLength();
-                chunk_len = CHUNK_SIZE;
+                chunk_len = LibConstants.CHUNK_LENGTH;
                 if(total_len<=chunk_len){
                     chunk_len = total_len;
                     num_chunk = 1;
@@ -301,10 +295,12 @@ public class ImageManager {
                     BitmapDisplayer bmpDisplayer =
                             new BitmapDisplayer(bitmap, imageRef.imageView, imageRef.defDrawableId);
 
-                    Activity a =
-                            (Activity) imageRef.imageView.getContext();
-
-                    a.runOnUiThread(bmpDisplayer);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            imageRef.imageView.setImageBitmap(bitmap);
+                        }
+                    });
                 }
             }
         }

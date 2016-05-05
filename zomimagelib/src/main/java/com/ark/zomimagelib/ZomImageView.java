@@ -1,6 +1,8 @@
 package com.ark.zomimagelib;
 
 import android.content.Context;
+import android.graphics.Matrix;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.ViewGroup;
@@ -12,30 +14,14 @@ import android.widget.ListView;
  * Created by akshaykale on 02/05/16.
  */
 
-enum LVState {
-    SCROLL_STATE_IDLE,
-    SCROLL_STATE_FLING,
-    SCROLL_STATE_TOUCH_SCROLL
-}
 
-public class ZomImageView extends ImageView implements AbsListView.OnScrollListener {
+public class ZomImageView extends ImageView {
 
     private static final String TAG = "ZomImageView";
-    private Context mContext;
+    Context mContext;
 
-    public String url;
+    int height = 300, width = 300;
 
-    ListView listView;
-
-    public static final int SCROLL_STATE_IDLE = 0,
-            SCROLL_STATE_FLING = 2,
-            SCROLL_STATE_TOUCH_SCROLL = 1;
-
-
-    /*public static void init(ListView lv) {
-        listView = lv;
-    }
-*/
     public ZomImageView(Context context) {
         super(context);
         mContext = context;
@@ -49,55 +35,41 @@ public class ZomImageView extends ImageView implements AbsListView.OnScrollListe
     public ZomImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mContext = context;
+       // setImageResource(R.drawable.simple);
     }
 
-
-    /**
-     * Used by developers for passing various parameters
-     * <p/>
-     * 1> URL
-     */
     public void setImage(int img) {
-
         setImageResource(img);
-
     }
 
-
-    public void setImage(ViewGroup view, String url) {
-        this.url = url;
-
-        listView = (ListView) view;
-
-        listView.setOnScrollListener(this);
-
-    }
 
     @Override
-    public void onScrollStateChanged(AbsListView view, int scrollState) {
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-        Log.d(TAG, "STATE : " + scrollState);
+        Log.d(TAG, "onMeasureImageView");
 
-        switch (scrollState) {
-            case SCROLL_STATE_FLING:
-                //Ignore
-                break;
-            case SCROLL_STATE_IDLE:
-                //ImageDownloader imgDownloadAsync = new ImageDownloader(this, LVState.SCROLL_STATE_IDLE);
-                //imgDownloadAsync.execute(url);
-                break;
-            case SCROLL_STATE_TOUCH_SCROLL:
-                //ImageDownloader imgDownloadAsync_ = new ImageDownloader(this, LVState.SCROLL_STATE_TOUCH_SCROLL);
-                //imgDownloadAsync_.execute(url);
-                break;
+        // Get image matrix values and place them in an array
+        float[] f = new float[9];
+        getImageMatrix().getValues(f);
 
-            default:
+        // Extract the scale values using the constants (if aspect ratio maintained, scaleX == scaleY)
+        final float scaleX = f[Matrix.MSCALE_X];
+        final float scaleY = f[Matrix.MSCALE_Y];
 
+        // Get the drawable (could also get the bitmap behind the drawable and getWidth/getHeight)
+        final Drawable d = getDrawable();
+        if (d != null) {
+            final int origW = d.getIntrinsicWidth();
+            final int origH = d.getIntrinsicHeight();
+
+            // Calculate the actual dimensions
+            final int actW = Math.round(origW * scaleX);
+            final int actH = Math.round(origH * scaleY);
+            Log.e("DBG", "[" + origW + "," + origH + "] -> [" + actW + "," + actH + "] & scales: x=" + scaleX + " y=" + scaleY);
+            height = actH;
+            width = actW;
         }
-    }
-
-    @Override
-    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 
     }
 }

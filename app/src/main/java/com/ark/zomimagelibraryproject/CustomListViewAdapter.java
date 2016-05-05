@@ -11,6 +11,7 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import com.ark.zomimagelib.ImageManager;
+import com.ark.zomimagelib.ZomImageView;
 
 /**
  * Created by zomguest on 02/05/16.
@@ -63,7 +64,7 @@ public class CustomListViewAdapter extends BaseAdapter {
                 context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         View row = inflater.inflate(R.layout.custom_listview_row, parent,false);
 
-        final ImageView zomImageView = (ImageView) row.findViewById(R.id.ziv_row_image);
+        final ZomImageView zomImageView = (ZomImageView) row.findViewById(R.id.ziv_row_image);
         TextView tv_info = (TextView) row.findViewById(R.id.tv_row_info);
 
         final int  finalHeight = 300, finalWidth = 300;
@@ -72,7 +73,7 @@ public class CustomListViewAdapter extends BaseAdapter {
 
        // Log.d(TAG,finalWidth+"  -#-  "+finalHeight);
 
-        imageManager.displayImage(dataList[position%10], zomImageView, R.mipmap.ic_launcher,finalWidth,finalHeight);
+        imageManager.displayImage(dataList[position%10], zomImageView, R.mipmap.ic_launcher);
 
         tv_info.setText(dataList[position%10]);
 

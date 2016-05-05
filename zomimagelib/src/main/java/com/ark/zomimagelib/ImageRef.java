@@ -19,5 +19,7 @@ class ImageRef {
         defDrawableId = defaultDrawableId;
         view_height = h;
         view_width = w;
+
+        imageView.setTag(u);
     }
 }
