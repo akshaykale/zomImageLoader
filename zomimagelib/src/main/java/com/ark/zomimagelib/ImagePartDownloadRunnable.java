@@ -19,15 +19,15 @@ class ImagePartDownloadRunnable implements Runnable {
 
     private static final String TAG = "ImagePartDownload";
 
-    public ImagePartDownloadRunnable(String img_url, int start, int end, int current_chunk, DownloadListener downloadListener) {
+    public ImagePartDownloadRunnable(String img_url, int start, int end, int current_chunk, IntFileChunksDownloadListener fileChunksDownloadListener) {
         this.img_url = img_url;
         this.start = start;
         this.end = end;
         this.current_chunk = current_chunk;
-        this.downloadListener = downloadListener;
+        this.fileChunksDownloadListener = fileChunksDownloadListener;
     }
 
-    DownloadListener downloadListener;
+    IntFileChunksDownloadListener fileChunksDownloadListener;
 
     String img_url;
     int start,end;
@@ -55,9 +55,9 @@ class ImagePartDownloadRunnable implements Runnable {
             byte[] part = Utils.getBytes(in);
 
             if(part !=null){
-                downloadListener.downloadComplete(current_chunk,part);
+                fileChunksDownloadListener.downloadComplete(current_chunk,part);
             }else {
-                downloadListener.downloadFailed(current_chunk, this);
+                fileChunksDownloadListener.downloadFailed(current_chunk, this);
             }
         } catch (FileNotFoundException e) {
             e.printStackTrace();
@@ -65,7 +65,7 @@ class ImagePartDownloadRunnable implements Runnable {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-            downloadListener.downloadFailed(current_chunk, this);
+            fileChunksDownloadListener.downloadFailed(current_chunk, this);
         } finally {
             try {
                 if(in!=null)

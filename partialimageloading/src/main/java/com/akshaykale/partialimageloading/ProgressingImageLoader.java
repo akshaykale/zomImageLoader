@@ -183,7 +183,7 @@ class downloadThread implements Runnable, IntFileDownloadListener {
     }
 
     @Override
-    public void DownloadComplete(final Bitmap bitmap) {
+    public void onDownloadComplete(final Bitmap bitmap) {
         Log.d(TAG, "@@@@@@@@");
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override

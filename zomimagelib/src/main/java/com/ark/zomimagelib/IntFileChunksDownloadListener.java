@@ -5,7 +5,7 @@ package com.ark.zomimagelib;
  */
 
 
-public interface DownloadListener {
+public interface IntFileChunksDownloadListener {
 
     void downloadComplete(int current_chunk, byte[] data);
 

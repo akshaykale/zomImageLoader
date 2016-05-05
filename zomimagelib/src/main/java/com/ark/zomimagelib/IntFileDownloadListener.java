@@ -7,6 +7,6 @@ import android.graphics.Bitmap;
  */
 public interface IntFileDownloadListener {
 
-    void DownloadComplete(Bitmap bitmap);
+    void onDownloadComplete(Bitmap bitmap);
 
 }

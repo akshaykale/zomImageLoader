@@ -1,11 +1,8 @@
 package com.ark.zomimagelib;
 
-import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.util.LruCache;
@@ -279,7 +276,7 @@ public class ImageManager {
         }
 
         @Override
-        public void DownloadComplete(final Bitmap bitmap) {
+        public void onDownloadComplete(final Bitmap bitmap) {
             Log.d(TAG, "@@@@@@@@");
 
             if (bitmap != null) {

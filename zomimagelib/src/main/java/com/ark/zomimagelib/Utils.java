@@ -23,22 +23,6 @@ import java.net.URL;
  */
 public class Utils {
 
-    public static File getCacheDir(Context context, String dirName){
-        File cacheDir;
-        // Find/Create directory for cache images
-        String sdState = android.os.Environment.getExternalStorageState();
-        if (sdState.equals(android.os.Environment.MEDIA_MOUNTED)) {
-            File sdDir = android.os.Environment.getExternalStorageDirectory();
-            cacheDir = new File(sdDir, dirName);
-        } else {
-            cacheDir = context.getCacheDir();
-        }
-        if (!cacheDir.exists()) {
-            cacheDir.mkdirs();
-        }
-        return cacheDir;
-    }
-
     public static void writeFile(Bitmap bmp, File f) {
         FileOutputStream out = null;
 
@@ -125,23 +109,6 @@ public class Utils {
         return inSampleSize;
     }
 
-
-    public static byte[] getByteArray(InputStream is){
-
-        try {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-            int nRead;
-            byte[] data = new byte[16384];
-            while ((nRead = is.read(data, 0, data.length)) != -1) {
-                buffer.write(data, 0, nRead);
-            }
-            buffer.flush();
-            return buffer.toByteArray();
-        }catch (Exception e){
-            e.printStackTrace();
-            return null;
-        }
-    }
 
     public static byte[] getBytes(InputStream is) throws IOException {
 
