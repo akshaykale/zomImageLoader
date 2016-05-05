@@ -1,7 +1,7 @@
-# arkImageLoader
+# zomImageLoader
 Image downloading Library for Listview
 
-Features:
+##Features:
 
 > Parallel image downloading by dividing image in multiple chunks
 
@@ -11,7 +11,7 @@ Features:
 
 
 
-Usage:
+##Usage:
 
 1> In ListView Custom Adapter create an object of ImageManager
 
