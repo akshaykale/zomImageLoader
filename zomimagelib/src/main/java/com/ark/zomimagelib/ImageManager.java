@@ -7,7 +7,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.util.LruCache;
 import android.util.Log;
-import android.view.View;
 import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -16,13 +15,15 @@ import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.LinkedList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+
 
 /**
  * Created by akshay on 03/05/16.
  */
-public class ImageManager {
+public class ImageManager implements AbsListView.OnScrollListener {
 
     private static final String TAG = "ImageManager";
 
@@ -47,23 +48,30 @@ public class ImageManager {
     public ScrollState scrollState;
 
     public int STATE_FLING;
-    public boolean mBusy;
+    public boolean scrollUSED = false;
+
+    public ImageRef imageToLoad;
+
+    public LinkedList<ImageRef> imageRefsQueue;
+
 
     //Constructor
     public ImageManager(Context context, ListView lv, long _cacheDuration) {
 
         this.context = context;
         this.listView = lv;
-        //this.listView.setOnScrollListener(this);
+        this.listView.setOnScrollListener(this);
+
+        imageRefsQueue = new LinkedList<>();
 
         cacheDuration = _cacheDuration;
         mDateFormatter = new SimpleDateFormat("EEE',' dd MMM yyyy HH:mm:ss zzz");
 
         STATE_FLING = 0;
 
-        mBusy = false;
+        scrollUSED = false;
 
-        imageLoaderThread = new Thread(new ImageQueueManager(listView));
+        imageLoaderThread = new Thread(new ImageQueueManager());//(listView));
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         // Use 1/8th of the available memory for this memory cache.
@@ -100,6 +108,7 @@ public class ImageManager {
     public void displayImage(String url, ImageView imageView, int defaultDrawableId) {
         /** get actual bitmapsize to be displayed in the image view*/
         imageView.setImageResource(R.drawable.place_holder);
+
         int[] imgInfo = Utils.getBitmapPositionInsideImageView(imageView);
 
         //Check if cache map already has the imageBitmap
@@ -110,9 +119,22 @@ public class ImageManager {
             imageView.setImageBitmap(bmp);
         else {
             //add image to queue
-            queueImage(url, imageView, defaultDrawableId, imgInfo[2], imgInfo[3]);
+
+            //if (imageQueue.imageRefs.size() > 3)
+            //    imageQueue.imageRefs.remove(3);
+            //queueImage(url, imageView, defaultDrawableId, imgInfo[2], imgInfo[3]);
+
             //set temporary drawable
             imageView.setImageResource(defaultDrawableId);
+
+            ImageRef imageRef = new ImageRef(url,imageView,defaultDrawableId,imgInfo[2], imgInfo[3]);
+            if (imageRefsQueue.size() > 3)
+                imageRefsQueue.remove(3);
+            imageRefsQueue.addFirst(imageRef);
+
+            if(!scrollUSED){
+                requestDownload(imageRef);
+            }
 
         }
     }
@@ -169,30 +191,117 @@ public class ImageManager {
         }
     }
 
-    /*@Override
+/*
+    @Override
+    public void onScrollStateChanged(AbsListView view, int scrollState) {
+
+        STATE_FLING = scrollState;
+        Log.d(TAG, "FLING && " + STATE_FLING);
+        switch (scrollState) {
+            case 0:
+                mBusy = false;
+                int first = view.getFirstVisiblePosition();
+                for (int i = first; i < (first+3); i++) {
+                    requestDownload(imageToLoad);
+                }
+                break;
+            case 1:
+                mBusy = true;
+                requestDownload(imageToLoad);
+                break;
+            case 2:
+                mBusy = true;
+                break;
+        }
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+    }
+*/
+
+    @Override
     public void onScrollStateChanged(AbsListView view, int _scrollState) {
         STATE_FLING = _scrollState;
-        Log.d(TAG,"FLING && "+STATE_FLING);
+        scrollUSED = true;
+        Log.d(TAG,"SCROLL   --  "+_scrollState);
+        switch (_scrollState){
+            case 0:
+                for(ImageRef imageRef : imageRefsQueue){
+                    if(imageRef!=null){
+                        requestDownload(imageRef);
+                    }
+                }
+                break;
+            case 1:
+                for(ImageRef imageRef : imageRefsQueue){
+                    if(imageRef!=null){
+                        requestDownload(imageRef);
+                    }
+                }
+                break;
+
+            case 2:
+                break;
+        }
 
     }
 
     @Override
     public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
 
-    }*/
+    }
 
 
-    class ImageQueueManager implements Runnable, AbsListView.OnScrollListener {
 
-        ListView listView;
+    public void requestDownload(final ImageRef imageToLoad) {
+        final Bitmap bmp = getBitmap(imageToLoad);
+        if (bmp != null) {
+            addBitmapToMemoryCache(imageToLoad.url, bmp);
+            Object tag = imageToLoad.imageView.getTag();
+
+            // Make sure we have the right view - thread safety defender
+            if (tag != null && ((String) tag).equals(imageToLoad.url)) {
+                BitmapDisplayer bmpDisplayer =
+                        new BitmapDisplayer(bmp, imageToLoad.imageView, imageToLoad.defDrawableId);
+                new Handler(Looper.getMainLooper()).post(new Runnable() {
+                    @Override
+                    public void run() {
+                        imageToLoad.imageView.setImageBitmap(bmp);
+                    }
+                });
+            }
+        } else {
+            if (listView != null && imageToLoad != null) {
+                if (STATE_FLING == 2) {
+                    Log.d(TAG, "STATEE FLING    DONT DOWNLOAD");
+                } else {
+                    Log.d(TAG, "STATEE CAN DOWNLOAD");
+                    Rect scrollBounds = new Rect();
+                    listView.getHitRect(scrollBounds);
+                    //if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
+                    executorService.execute(new downloadThread(context, imageToLoad));
+                    //}
+                }
+            } else { //single image no listview directly download it
+                executorService.execute(new downloadThread(context, imageToLoad));
+            }
+        }
+    }
+
+
+    class ImageQueueManager implements Runnable{//, AbsListView.OnScrollListener {
+
+        /*ListView listView;
 
         public ImageQueueManager(ListView listView) {
             this.listView = listView;
             if(listView!=null)
                 this.listView.setOnScrollListener(this);
-        }
+        }*/
 
-        public ImageRef imageToLoad;
+        //public ImageRef imageToLoad;
 
         @Override
         public void run() {
@@ -230,7 +339,7 @@ public class ImageManager {
                                 });
                             }
                         } else {
-/*
+
                             if (listView != null) {
                                 if (STATE_FLING == 2) {
                                     Log.d(TAG, "STATEE FLING    DONT DOWNLOAD");
@@ -246,7 +355,7 @@ public class ImageManager {
                                 executorService.execute(new downloadThread(context, imageToLoad));
                             }
 
-*/
+
                         }
                     }
 
@@ -257,41 +366,8 @@ public class ImageManager {
             }
         }
 
-        public void requestDownload() {
-            final Bitmap bmp = getBitmap(imageToLoad);
-            if (bmp != null) {
-                addBitmapToMemoryCache(imageToLoad.url, bmp);
-                Object tag = imageToLoad.imageView.getTag();
 
-                // Make sure we have the right view - thread safety defender
-                if (tag != null && ((String) tag).equals(imageToLoad.url)) {
-                    BitmapDisplayer bmpDisplayer =
-                            new BitmapDisplayer(bmp, imageToLoad.imageView, imageToLoad.defDrawableId);
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            imageToLoad.imageView.setImageBitmap(bmp);
-                        }
-                    });
-                }
-            } else {
-                if (listView != null && imageToLoad != null) {
-                    if (STATE_FLING == 2) {
-                        Log.d(TAG, "STATEE FLING    DONT DOWNLOAD");
-                    } else {
-                        Log.d(TAG, "STATEE CAN DOWNLOAD");
-                        Rect scrollBounds = new Rect();
-                        listView.getHitRect(scrollBounds);
-                        //if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
-                        executorService.execute(new downloadThread(context, imageToLoad));
-                        //}
-                    }
-                } else { //single image no listview directly download it
-                    executorService.execute(new downloadThread(context, imageToLoad));
-                }
-            }
-        }
-        @Override
+        /*@Override
         public void onScrollStateChanged(AbsListView view, int scrollState) {
             STATE_FLING = scrollState;
             Log.d(TAG, "FLING && " + STATE_FLING);
@@ -316,7 +392,7 @@ public class ImageManager {
         @Override
         public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
             Log.d(TAG, "SCROLL&& " + firstVisibleItem +"    "+visibleItemCount+"      "+totalItemCount);
-        }
+        }*/
 
 
     }

@@ -6,7 +6,7 @@ import android.widget.ImageView;
  * Created by akshaykale on 03/05/16.
  */
 
-class ImageRef {
+public class ImageRef {
     public String url;
     public ImageView imageView;
     public int defDrawableId;

@@ -66,7 +66,7 @@ public class CustomListViewAdapter extends BaseAdapter {
         final ZomImageView zomImageView = (ZomImageView) row.findViewById(R.id.ziv_row_image);
         TextView tv_info = (TextView) row.findViewById(R.id.tv_row_info);
 
-        Log.d(TAG,"STATEE ##@@ getView "+ state);
+        Log.d(TAG,"STATEE ##@@ getView "+ position);
 
         if (state != 2)
             imageManager.displayImage(dataList[position], zomImageView, R.mipmap.ic_launcher);
