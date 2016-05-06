@@ -99,7 +99,7 @@ public class ImageDownloader implements IntFileChunksDownloadListener {//, AbsLi
         int start = 0, end = chunck_length - 1;
         for (int i = 0; i < num_chuncks; i++) {
 
-            if (imageToLoad.imageView.getVisibility() == View.VISIBLE) {
+            //if (imageToLoad.imageView.getVisibility() == View.VISIBLE) {
                 start = i * chunck_length;
                 end = ((i + 1) >= num_chuncks) ? total_length - 1 : ((i + 1) * chunck_length) - 1;
                 //Log.d(TAG,"start:  "+start+"      end: "+end);
@@ -114,9 +114,9 @@ public class ImageDownloader implements IntFileChunksDownloadListener {//, AbsLi
                             i,  //current chunk
                             this));
                 }
-            } else {
-                Log.d(TAG, "INVISIBLE");
-            }
+            //} else {
+            //    Log.d(TAG, "INVISIBLE");
+            //}
         }
     }
 
@@ -152,13 +152,15 @@ public class ImageDownloader implements IntFileChunksDownloadListener {//, AbsLi
             view.getHitRect(scrollBounds);
             if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
                 //continue downloading chunks
-            } else if (imageToLoad.imageView.getVisibility() != View.VISIBLE) {
+            } else {//if (imageToLoad.imageView.getVisibility() != View.VISIBLE) {
                 try {
                     if (executorService.awaitTermination(2, TimeUnit.SECONDS)) {
                         System.out.println("task completed");
+
                     } else {
                         System.out.println("Forcing shutdown...");
                         mCacheMap.evictAll();
+                        //
                         executorService.shutdownNow();
                     }
                 } catch (InterruptedException e) {
@@ -166,12 +168,11 @@ public class ImageDownloader implements IntFileChunksDownloadListener {//, AbsLi
                 }
             }
         }
-
     }
 
     @Override
     public void downloadFailed(int current_chunk, ImagePartDownloadRunnable runnable) {
-
+//condition
         Log.d(TAG, "DOWNLOAD FAILED  -->> " + current_chunk);
         download_status[current_chunk] = 0;
         //try again

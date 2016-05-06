@@ -241,11 +241,9 @@ public class ImageManager implements AbsListView.OnScrollListener {
                     }
                 }
                 break;
-
             case 2:
                 break;
         }
-
     }
 
     @Override

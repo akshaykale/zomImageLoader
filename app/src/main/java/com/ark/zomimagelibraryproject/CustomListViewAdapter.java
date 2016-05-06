@@ -37,6 +37,7 @@ public class CustomListViewAdapter extends BaseAdapter {
         for(int i=0;i<100;i++){
             dataList[i] = "http://dummyimage.com/800x701/000/fff&text=aa"+i+".jpg";
         }
+        dataList[0] = Constants.IMG10;
 
         imageManager = new ImageManager(context, listView, 1000000000);
     }
