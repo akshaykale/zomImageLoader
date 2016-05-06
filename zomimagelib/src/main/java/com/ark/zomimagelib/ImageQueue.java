@@ -14,6 +14,7 @@ class ImageQueue {
     public Stack<ImageRef> imageRefs =
             new Stack<>();
 
+
     //removes all instances of this ImageView
     public void Clean(ImageView view) {
 
@@ -23,4 +24,6 @@ class ImageQueue {
             else ++i;
         }
     }
+
+
 }

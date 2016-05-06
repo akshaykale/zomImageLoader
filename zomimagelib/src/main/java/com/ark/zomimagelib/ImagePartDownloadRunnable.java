@@ -3,8 +3,11 @@ package com.ark.zomimagelib;
 import android.util.Log;
 
 import java.io.BufferedInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -45,7 +48,7 @@ class ImagePartDownloadRunnable implements Runnable {
             /** STEP 2 --  Open Connection*/
             connection = (HttpURLConnection) url.openConnection();
 
-            Log.d(TAG,"Start: "+start+"     end: "+end);
+            //Log.d(TAG,"Start: "+start+"     end: "+end);
             connection.setRequestProperty("Range", "bytes=" + start+ "-" + end);
             connection.setDoInput(true);
             connection.setDoOutput(true);
@@ -55,6 +58,14 @@ class ImagePartDownloadRunnable implements Runnable {
             byte[] part = Utils.getBytes(in);
 
             if(part !=null){
+                OutputStream os = new FileOutputStream(new File(ImageManager.cacheDir,img_url.hashCode()+"_"+current_chunk));
+                byte[] buffer = new byte[1024];
+                int bytesRead;
+                while((bytesRead = in.read(buffer)) !=-1){
+                    os.write(buffer, 0, bytesRead);
+                }
+                os.flush();
+                os.close();
                 fileChunksDownloadListener.downloadComplete(current_chunk,part);
             }else {
                 fileChunksDownloadListener.downloadFailed(current_chunk, this);
@@ -65,8 +76,9 @@ class ImagePartDownloadRunnable implements Runnable {
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
-            fileChunksDownloadListener.downloadFailed(current_chunk, this);
-        } finally {
+        } catch (Exception e){
+            e.printStackTrace();
+        }finally {
             try {
                 if(in!=null)
                     in.close();

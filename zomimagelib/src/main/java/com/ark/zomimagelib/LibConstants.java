@@ -5,6 +5,6 @@ package com.ark.zomimagelib;
  */
 public class LibConstants {
 
-    public static int CHUNK_LENGTH = 80000;
+    public static int CHUNK_LENGTH = 8000;
 
 }

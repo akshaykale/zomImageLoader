@@ -7,6 +7,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.v4.util.LruCache;
 import android.util.Log;
+import android.view.View;
+import android.widget.AbsListView;
 import android.widget.ImageView;
 import android.widget.ListView;
 
@@ -28,11 +30,13 @@ public class ImageManager {
     private SimpleDateFormat mDateFormatter;
 
     private LruCache<String, Bitmap> lruCacheMap; //= new HashMap<>();
-    private File cacheDir;
+    public static LruCache<String, byte[]> lruChunkCacheMap; //= new HashMap<>();
+
+    public static File cacheDir;
 
     private ImageQueue imageQueue = new ImageQueue();
 
-    private Thread imageLoaderThread ;
+    private Thread imageLoaderThread;
 
     public Context context;
 
@@ -40,17 +44,26 @@ public class ImageManager {
 
     ExecutorService executorService;
 
+    public ScrollState scrollState;
+
+    public int STATE_FLING;
+    public boolean mBusy;
 
     //Constructor
-    public ImageManager(Context context, ListView lv , long _cacheDuration) {
+    public ImageManager(Context context, ListView lv, long _cacheDuration) {
 
         this.context = context;
         this.listView = lv;
+        //this.listView.setOnScrollListener(this);
 
         cacheDuration = _cacheDuration;
         mDateFormatter = new SimpleDateFormat("EEE',' dd MMM yyyy HH:mm:ss zzz");
 
-        imageLoaderThread = new Thread(new ImageQueueManager());
+        STATE_FLING = 0;
+
+        mBusy = false;
+
+        imageLoaderThread = new Thread(new ImageQueueManager(listView));
 
         final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
         // Use 1/8th of the available memory for this memory cache.
@@ -66,6 +79,7 @@ public class ImageManager {
 
         executorService = Executors.newFixedThreadPool(5);
 
+        scrollState = new ScrollState(context);
         // Make background thread low priority, to avoid affecting UI performance
         imageLoaderThread.setPriority(Thread.NORM_PRIORITY - 1);
 
@@ -86,17 +100,20 @@ public class ImageManager {
     public void displayImage(String url, ImageView imageView, int defaultDrawableId) {
         /** get actual bitmapsize to be displayed in the image view*/
         imageView.setImageResource(R.drawable.place_holder);
-        int [] imgInfo = Utils.getBitmapPositionInsideImageView(imageView);
+        int[] imgInfo = Utils.getBitmapPositionInsideImageView(imageView);
 
         //Check if cache map already has the imageBitmap
         Bitmap bmp = getBitmapFromMemCache(url);
-        if(bmp !=null)
+        Log.d(TAG, "FLING : " + String.valueOf(STATE_FLING));
+
+        if (bmp != null)
             imageView.setImageBitmap(bmp);
         else {
             //add image to queue
             queueImage(url, imageView, defaultDrawableId, imgInfo[2], imgInfo[3]);
             //set temporary drawable
             imageView.setImageResource(defaultDrawableId);
+
         }
     }
 
@@ -113,9 +130,7 @@ public class ImageManager {
             imageLoaderThread.start();
         }
     }
-    /**
-     *  For normal ImageView
-     * */
+
     private Bitmap getBitmap(ImageRef imgRef) {
         try {
             String filename = String.valueOf(imgRef.url.hashCode());
@@ -123,8 +138,8 @@ public class ImageManager {
             //get bitmap from cache dir
             File bitmapFile = new File(cacheDir, filename);
             Bitmap bitmap = null;
-            if(bitmapFile.exists() && imgRef.view_width >=0 && imgRef.view_height >=0)
-                bitmap = Utils.decodeBitmapFromFile(bitmapFile.getPath(),imgRef.view_width,imgRef.view_height);//BitmapFactory.decodeFile(bitmapFile.getPath());
+            if (bitmapFile.exists() && imgRef.view_width >= 0 && imgRef.view_height >= 0)
+                bitmap = Utils.decodeBitmapFromFile(bitmapFile.getPath(), imgRef.view_width, imgRef.view_height);//BitmapFactory.decodeFile(bitmapFile.getPath());
 
             // Check if the bitmap is present in the cache
             if (bitmap != null) {
@@ -132,7 +147,7 @@ public class ImageManager {
                 long currentTimeMillis = System.currentTimeMillis();
                 long bitmapTimeMillis = bitmapFile.lastModified();
                 if ((currentTimeMillis - bitmapTimeMillis) < cacheDuration) {
-                    Log.d(TAG,"bitmap found in file");
+                    Log.d(TAG, "bitmap found in file");
                     return bitmap;
                 }
 
@@ -154,8 +169,30 @@ public class ImageManager {
         }
     }
 
+    /*@Override
+    public void onScrollStateChanged(AbsListView view, int _scrollState) {
+        STATE_FLING = _scrollState;
+        Log.d(TAG,"FLING && "+STATE_FLING);
 
-    class ImageQueueManager implements Runnable {
+    }
+
+    @Override
+    public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+
+    }*/
+
+
+    class ImageQueueManager implements Runnable, AbsListView.OnScrollListener {
+
+        ListView listView;
+
+        public ImageQueueManager(ListView listView) {
+            this.listView = listView;
+            if(listView!=null)
+                this.listView.setOnScrollListener(this);
+        }
+
+        public ImageRef imageToLoad;
 
         @Override
         public void run() {
@@ -171,14 +208,13 @@ public class ImageManager {
 
                     // When we have images to be loaded
                     if (imageQueue.imageRefs.size() != 0) {
-                        final ImageRef imageToLoad;
-
+                        int cState;
                         synchronized (imageQueue.imageRefs) {
                             imageToLoad = imageQueue.imageRefs.pop();
                         }
 
                         final Bitmap bmp = getBitmap(imageToLoad);
-                        if(bmp!=null) {
+                        if (bmp != null) {
                             addBitmapToMemoryCache(imageToLoad.url, bmp);
                             Object tag = imageToLoad.imageView.getTag();
 
@@ -193,17 +229,24 @@ public class ImageManager {
                                     }
                                 });
                             }
-                        }else {
-                            if(listView!=null) {
-                                Rect scrollBounds = new Rect();
-                                listView.getHitRect(scrollBounds);
-                                if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
+                        } else {
+/*
+                            if (listView != null) {
+                                if (STATE_FLING == 2) {
+                                    Log.d(TAG, "STATEE FLING    DONT DOWNLOAD");
+                                } else {
+                                    Log.d(TAG, "STATEE CAN DOWNLOAD");
+                                    Rect scrollBounds = new Rect();
+                                    listView.getHitRect(scrollBounds);
+                                    //if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
                                     executorService.execute(new downloadThread(context, imageToLoad));
+                                    //}
                                 }
-                            }else {
+                            } else { //single image no listview directly download it
                                 executorService.execute(new downloadThread(context, imageToLoad));
                             }
 
+*/
                         }
                     }
 
@@ -213,30 +256,98 @@ public class ImageManager {
             } catch (InterruptedException e) {
             }
         }
+
+        public void requestDownload() {
+            final Bitmap bmp = getBitmap(imageToLoad);
+            if (bmp != null) {
+                addBitmapToMemoryCache(imageToLoad.url, bmp);
+                Object tag = imageToLoad.imageView.getTag();
+
+                // Make sure we have the right view - thread safety defender
+                if (tag != null && ((String) tag).equals(imageToLoad.url)) {
+                    BitmapDisplayer bmpDisplayer =
+                            new BitmapDisplayer(bmp, imageToLoad.imageView, imageToLoad.defDrawableId);
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            imageToLoad.imageView.setImageBitmap(bmp);
+                        }
+                    });
+                }
+            } else {
+                if (listView != null && imageToLoad != null) {
+                    if (STATE_FLING == 2) {
+                        Log.d(TAG, "STATEE FLING    DONT DOWNLOAD");
+                    } else {
+                        Log.d(TAG, "STATEE CAN DOWNLOAD");
+                        Rect scrollBounds = new Rect();
+                        listView.getHitRect(scrollBounds);
+                        //if (imageToLoad.imageView.getLocalVisibleRect(scrollBounds)) {
+                        executorService.execute(new downloadThread(context, imageToLoad));
+                        //}
+                    }
+                } else { //single image no listview directly download it
+                    executorService.execute(new downloadThread(context, imageToLoad));
+                }
+            }
+        }
+        @Override
+        public void onScrollStateChanged(AbsListView view, int scrollState) {
+            STATE_FLING = scrollState;
+            Log.d(TAG, "FLING && " + STATE_FLING);
+            switch (scrollState) {
+                case 0:
+                    mBusy = false;
+                    int first = view.getFirstVisiblePosition();
+                    for (int i = first; i < (first+3); i++) {
+                        requestDownload();
+                    }
+                    break;
+                case 1:
+                    mBusy = true;
+                    requestDownload();
+                    break;
+                case 2:
+                    mBusy = true;
+                    break;
+            }
+        }
+
+        @Override
+        public void onScroll(AbsListView view, int firstVisibleItem, int visibleItemCount, int totalItemCount) {
+            Log.d(TAG, "SCROLL&& " + firstVisibleItem +"    "+visibleItemCount+"      "+totalItemCount);
+        }
+
+
     }
+
 
     public void addBitmapToMemoryCache(String key, Bitmap bitmap) {
         if (getBitmapFromMemCache(key) == null) {
             lruCacheMap.put(key, bitmap);
         }
     }
-
     public Bitmap getBitmapFromMemCache(String key) {
         return lruCacheMap.get(key);
     }
 
 
 
-
-
-
+    public static void addByteArrToMemCache(String key, byte[] arr) {
+        if (getByteArrFromMemCache(key) == null) {
+            lruChunkCacheMap.put(key, arr);
+        }
+    }
+    public static byte[] getByteArrFromMemCache(String key) {
+        return lruChunkCacheMap.get(key);
+    }
 
 
     class downloadThread implements Runnable, IntFileDownloadListener {
 
         private static final String TAG = "aaa";
         Context context;
-        public int total_len, chunk_len, num_chunk ;
+        public int total_len, chunk_len, num_chunk;
 
         ImageRef imageRef;
 
@@ -255,20 +366,21 @@ public class ImageManager {
                 /** STEP 3 --  get content length*/
                 total_len = connection.getContentLength();
                 chunk_len = LibConstants.CHUNK_LENGTH;
-                if(total_len<=chunk_len){
+                if (total_len <= chunk_len) {
                     chunk_len = total_len;
                     num_chunk = 1;
-                }else {
+                } else {
                     num_chunk = total_len / chunk_len;
                     int last_chunk = chunk_len % total_len;
                     num_chunk = (last_chunk > 0) ? num_chunk++ : num_chunk;
                 }
                 /** STEP 4 --  disconnect*/
                 connection.disconnect();
-                Log.d(TAG, "total_len:" + total_len +"  "+ imageRef.url +"  chunk_len:" + chunk_len + "   num_chunk: " + num_chunk);
+                Log.d(TAG, "total_len:" + total_len + "  " + imageRef.url + "  chunk_len:" + chunk_len + "   num_chunk: " + num_chunk);
 
-                ImageDownloader imageDownloader = new ImageDownloader(context, total_len, chunk_len, num_chunk, this);
+                ImageDownloader imageDownloader = new ImageDownloader(context, imageRef, listView, total_len, chunk_len, num_chunk, this);
                 imageDownloader.execute(imageRef.url);
+
 
             } catch (Exception e) {
                 e.printStackTrace();
@@ -296,6 +408,7 @@ public class ImageManager {
                         @Override
                         public void run() {
                             imageRef.imageView.setImageBitmap(bitmap);
+                            listView.deferNotifyDataSetChanged();
                         }
                     });
                 }

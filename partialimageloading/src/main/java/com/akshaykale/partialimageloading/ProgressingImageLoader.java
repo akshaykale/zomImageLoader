@@ -174,8 +174,8 @@ class downloadThread implements Runnable, IntFileDownloadListener {
             connection.disconnect();
             Log.d(TAG, "total_len:" + total_len + "  chunk_len:" + chunk_len + "   num_chunk: " + num_chunk);
 
-            ImageDownloader imageDownloader = new ImageDownloader(context, total_len, chunk_len, num_chunk, this);
-            imageDownloader.execute(str_url);
+           // ImageDownloader imageDownloader = new ImageDownloader(context, total_len, chunk_len, num_chunk, this);
+           // imageDownloader.execute(str_url);
 
         } catch (Exception e) {
             e.printStackTrace();
